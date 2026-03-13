@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Catchpoint → Dynatrace Synthetic Converter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+
+      body {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: radial-gradient(circle at top left, #1f2937, #020617);
+        color: #e5e7eb;
+      }
+
+      .app-shell {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 16px 20px 12px;
+        gap: 12px;
+      }
+
+      .app-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .title-group h1 {
+        margin: 0 0 4px;
+        font-size: 1.4rem;
+        letter-spacing: 0.02em;
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #9ca3af;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .main-layout {
+        flex: 1;
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) auto minmax(0, 1.3fr);
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .panel {
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        box-shadow: 0 22px 45px rgba(15, 23, 42, 0.8);
+        padding: 12px 12px 10px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .panel-center {
+        align-items: center;
+        justify-content: center;
+        padding-inline: 10px;
+        gap: 10px;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+        padding-inline: 4px;
+        margin-bottom: 6px;
+      }
+
+      .panel-header h2 {
+        margin: 0;
+        font-size: 0.98rem;
+      }
+
+      .panel-subtitle {
+        margin: 2px 0 0;
+        font-size: 0.78rem;
+        color: #94a3b8;
+      }
+
+      .panel-footer {
+        margin-top: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .code-input,
+      .code-output {
+        width: 100%;
+        flex: 1;
+        resize: none;
+        border-radius: 10px;
+        border: 1px solid rgba(55, 65, 81, 0.8);
+        padding: 8px 9px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+          'Courier New', monospace;
+        font-size: 0.8rem;
+        background: radial-gradient(circle at top left, #020617, #020617);
+        color: #e5e7eb;
+        outline: none;
+        box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 1);
+      }
+
+      .code-input::placeholder,
+      .code-output::placeholder {
+        color: #6b7280;
+      }
+
+      .code-input:focus,
+      .code-output:focus {
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
+      }
+
+      .primary-button,
+      .secondary-button,
+      .ghost-button {
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 8px 16px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        white-space: nowrap;
+        transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease,
+          border-color 0.06s ease;
+      }
+
+      .primary-button {
+        background: linear-gradient(135deg, #38bdf8, #6366f1);
+        color: #0b1120;
+        box-shadow: 0 12px 22px rgba(56, 189, 248, 0.4);
+      }
+
+      .primary-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 28px rgba(56, 189, 248, 0.5);
+      }
+
+      .secondary-button {
+        background: rgba(15, 23, 42, 0.9);
+        color: #e5e7eb;
+        border-color: rgba(148, 163, 184, 0.5);
+      }
+
+      .secondary-button:hover {
+        background: rgba(30, 64, 175, 0.8);
+        border-color: #93c5fd;
+      }
+
+      .ghost-button {
+        background: transparent;
+        color: #e5e7eb;
+        border-color: rgba(148, 163, 184, 0.4);
+      }
+
+      .ghost-button:hover {
+        border-color: #e5e7eb;
+        background: rgba(15, 23, 42, 0.7);
+      }
+
+      .ghost-button.small {
+        padding-block: 5px;
+        font-size: 0.74rem;
+      }
+
+      .status-message {
+        min-height: 20px;
+        font-size: 0.8rem;
+        color: #9ca3af;
+        text-align: center;
+        max-width: 220px;
+      }
+
+      .status-message.error {
+        color: #fecaca;
+      }
+
+      .status-message.success {
+        color: #bbf7d0;
+      }
+
+      .parse-summary {
+        font-size: 0.75rem;
+        color: #9ca3af;
+      }
+
+      .parse-summary strong {
+        color: #e5e7eb;
+      }
+
+      .app-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.76rem;
+        color: #6b7280;
+      }
+
+      .footer-info {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+      }
+
+      .dot.green {
+        background: #22c55e;
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
+      }
+
+      @media (max-width: 960px) {
+        .main-layout {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto auto auto;
+        }
+
+        .panel-center {
+          order: -1;
+          flex-direction: row;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .app-shell {
+          padding-inline: 10px;
+        }
+
+        .app-header {
+          flex-direction: column;
+        }
+
+        .panel-center {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div class="title-group">
+          <h1>Catchpoint → Dynatrace Converter</h1>
+          <p class="subtitle">
+            Paste a multi-step Catchpoint synthetic script on the left and convert it to a Dynatrace
+            browser monitor (clickpath) JSON script on the right.
+          </p>
+        </div>
+        <div class="header-actions">
+          <button id="exampleBtn" class="ghost-button">Load Example Script</button>
+        </div>
+      </header>
+
+      <main class="main-layout">
+        <section class="panel panel-left">
+          <div class="panel-header">
+            <div>
+              <h2>Catchpoint Script</h2>
+              <p class="panel-subtitle">Selenium-style multi-step transaction script</p>
+            </div>
+          </div>
+          <textarea
+            id="catchpointInput"
+            class="code-input"
+            spellcheck="false"
+            placeholder='Example:
+Open("https://example.com")
+setStepName("1. Homepage")
+waitForNoRequest("3000")
+click("//a[@id=\'login\']")
+setStepName("2. Login")
+waitForElementPresent("//input[@id=\'username\']", "15000")
+typeKeys("//input[@id=\'username\']", "demo")
+typeKeys("//input[@id=\'password\']", "secret")
+clickAndWait("//button[@id=\'submit\']")
+'
+          ></textarea>
+          <div class="panel-footer">
+            <div id="parseSummary" class="parse-summary"></div>
+          </div>
+        </section>
+
+        <section class="panel panel-center">
+          <button id="convertBtn" class="primary-button">Convert →</button>
+          <button id="beautifyBtn" class="secondary-button">Beautify JSON</button>
+          <div id="statusMessage" class="status-message" aria-live="polite"></div>
+        </section>
+
+        <section class="panel panel-right">
+          <div class="panel-header">
+            <div>
+              <h2>Dynatrace JSON</h2>
+              <p class="panel-subtitle">
+                Browser monitor (clickpath) configuration JSON (approximate schema)
+              </p>
+            </div>
+          </div>
+          <textarea
+            id="dynatraceOutput"
+            class="code-output"
+            spellcheck="false"
+            placeholder="Converted Dynatrace JSON will appear here…"
+          ></textarea>
+          <div class="panel-footer">
+            <button id="copyJsonBtn" class="ghost-button small">Copy JSON</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <div class="footer-info">
+          <span class="dot green"></span>
+          <span>
+            This tool provides a structural mapping only. Review and adjust generated JSON against
+            the latest Dynatrace schema before importing.
+            v1.0.1
+          </span>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      function normalizeLine(line) {
+        return line.trim();
+      }
+
+      function isComment(line) {
+        return line.startsWith('//') || line.startsWith('#');
+      }
+
+      function isWebDriverCookieLine(line) {
+        return /webDriver\.Manage\(\)\.Cookies\.(DeleteCookieNames|AddCookie)/i.test(line);
+      }
+
+      function parseOpen(line) {
+        let m = line.match(/Open\("([^"]+)"\)/i);
+        if (m) return { url: m[1] };
+
+        m = line.match(/Catchpoint\$\.\s*open\((["'`])(.+?)\1/i);
+        if (m) return { url: m[2] };
+
+        m = line.match(/page\.goto\((["'`])(.+?)\1/);
+        if (m) return { url: m[2] };
+
+        return null;
+      }
+
+      function parseUrlAssignment(line) {
+        const m = line.match(/var\s+\w+\s*=\s*(["'`])(https?:\/\/[^"'`]+)\1\s*;?/);
+        return m ? { url: m[2] } : null;
+      }
+
+      function parseSetStepName(line) {
+        const m = line.match(/^setStepName\("([^"]+)"\)/i);
+        return m ? { name: m[1] } : null;
+      }
+
+      function parseStartStep(line) {
+        const m = line.match(/Catchpoint\.startStep\((["'`])(.+?)\1\)/);
+        return m ? { name: m[2] } : null;
+      }
+
+      function parseWaitForNoRequest(line) {
+        const m = line.match(/^waitForNoRequest\("(\d+)"\)/i);
+        return m ? { timeoutMs: parseInt(m[1], 10) } : null;
+      }
+
+      function parseWaitForElementPresent(line) {
+        const m = line.match(/waitForElementPresent\((.+)\)/i);
+        if (!m) return null;
+
+        const args = m[1].split(',');
+        const locatorPart = args[0] ? args[0].trim() : '';
+        const timeoutPart = args[1] ? args[1].trim() : '';
+
+        const locatorMatch = locatorPart.match(/["'`](.+)["'`]/);
+        const locator = locatorMatch ? locatorMatch[1] : locatorPart;
+
+        const timeoutDigitsMatch = timeoutPart.match(/(\d+)/);
+        const timeoutMs = timeoutDigitsMatch ? parseInt(timeoutDigitsMatch[1], 10) : 20000;
+
+        return { locator, timeoutMs };
+      }
+
+      function parseClick(line) {
+        let m = line.match(/^click\("([^"]+)"\)/i);
+        if (m) return { locator: m[1] };
+
+        m = line.match(/Catchpoint\$\.(?:click|clickMouse)\((["'`])(.+?)\1/i);
+        if (m) return { locator: m[2] };
+
+        if (!line.includes('.fill(')) {
+          m = line.match(/page\.locator\(\s*(['"`])([\s\S]*?)\1\s*\)[^;]*\.click\(/);
+          if (m) return { locator: m[2] };
+          m = line.match(
+            /page\.locator\(\s*(['"`])([\s\S]*?)\1\s*\)(?:\.first\(\))?\s*\.dispatchEvent\s*\(\s*['"]click['"]\s*\)/,
+          );
+          if (m) return { locator: m[2] };
+        }
+
+        return null;
+      }
+
+      function parseClickAndWait(line) {
+        let m = line.match(/^clickAndWait\("([^"]+)"\)/i);
+        if (m) return { locator: m[1] };
+
+        m = line.match(/Catchpoint\$\.(?:clickAndWait)\((["'`])([\s\S]*?)\1/i);
+        if (m) return { locator: m[2] };
+
+        return null;
+      }
+
+      function parseTypeKeys(line) {
+        let m = line.match(/^typeKeys\("([^"]+)"\s*,\s*"([^"]*)"\)/i);
+        if (m) return { locator: m[1], value: m[2] };
+
+        m = line.match(
+          /Catchpoint\$\.\s*typeKeys\(\s*(['"`])([\s\S]*?)\1\s*,\s*(['"`])([\s\S]*?)\3\s*\)/,
+        );
+        if (m) {
+          const rawLocator = m[2];
+          const value = m[4];
+          let locator = rawLocator;
+
+          let idMatch = rawLocator.match(/^\/\/\*\[@id=['"]([^'"]+)['"]\]$/);
+          if (!idMatch) {
+            idMatch = rawLocator.match(/^\/\/[a-zA-Z0-9_-]+\[@id=['"]([^'"]+)['"]\]$/);
+          }
+          if (idMatch) {
+            locator = `#${idMatch[1]}`;
+          } else {
+            const nameMatch = rawLocator.match(/^\/\/([a-zA-Z0-9_-]+)\[@name=['"]([^'"]+)['"]\]$/);
+            if (nameMatch) {
+              locator = `${nameMatch[1]}[name="${nameMatch[2].replace(/"/g, '\\"')}"]`;
+            } else {
+              const classMatch = rawLocator.match(
+                /^\/\/([a-zA-Z0-9_-]+)\[@class=['"]([^'"]+)['"]\]$/,
+              );
+              if (classMatch) {
+                locator = `${classMatch[1]}.${classMatch[2]}`;
+              }
+            }
+          }
+
+          return { locator, value };
+        }
+
+        m = line.match(/page\.locator\(\s*`([^`]+)`\s*\)(?:\.first\(\))?\s*\.fill\(\s*`([^`]*)`\s*\)/);
+        if (m) {
+          const rawLocator = m[1];
+          const value = m[2];
+          const idMatch = rawLocator.match(/^\/\/\*\[@id=['"]([^'"]+)['"]\]$/);
+          const locator = idMatch ? `#${idMatch[1]}` : rawLocator;
+          return { locator, value };
+        }
+
+        m = line.match(
+          /page\.locator\(\s*(['"`])([\s\S]*?)\1\s*\)(?:\.first\(\))?\s*\.fill\(\s*(['"`])([\s\S]*?)\3\s*\)/,
+        );
+        if (m) {
+          const rawLocator = m[2];
+          const value = m[4];
+          const idMatch = rawLocator.match(/^\/\/\*\[@id=['"]([^'"]+)['"]\]$/);
+          const locator = idMatch ? `#${idMatch[1]}` : rawLocator;
+          return { locator, value };
+        }
+
+        return null;
+      }
+
+      function parseSelect(line) {
+        const m = line.match(/^select\("([^"]+)"\s*,\s*"([^"]+)"\)/i);
+        return m ? { locator: m[1], option: m[2] } : null;
+      }
+
+      function parsePause(line) {
+        const m = line.match(/pause\(\s*Number\((["'`])(\d+)\1\)\s*\)/i);
+        if (m) {
+          return { timeoutMs: parseInt(m[2], 10) };
+        }
+        const m2 = line.match(/pause\(\s*(\d+)\s*\)/i);
+        return m2 ? { timeoutMs: parseInt(m2[1], 10) } : null;
+      }
+
+      function parseRunScript(line) {
+        const m = line.match(/runScript\((["'`])([\s\S]*?)\1\)/);
+        if (m) {
+          return { script: normalizeEmbeddedScript(m[2]) };
+        }
+        return null;
+      }
+
+      function parseSearchPriceEvaluate(line) {
+        if (line.includes('page.evaluate') && line.includes('storeScriptVariable')) {
+          const m = line.match(/return\s+([\s\S]*?)\s*;\s*\}\s*\)\s*;?\s*\/\/\s*storeScriptVariable/);
+          let expression = m ? m[1].trim() : null;
+          if (expression) {
+            expression = normalizePriceExpression(expression);
+          }
+          return { kind: 'searchPrice', expression };
+        }
+        return null;
+      }
+
+      function normalizePriceExpression(expr) {
+        return expr
+          .replace(/""/g, '"')
+          .replace(/\r?\n/g, ' ')
+          .replace(/\s+/g, ' ')
+          .replace(/;+\s*$/, '')
+          .replace(/\[\s*([^\]=]+)\s*=\s*/g, '[$1=')
+          .trim();
+      }
+
+      function normalizeEmbeddedScript(script) {
+        if (typeof script !== 'string') return script;
+        return script
+          .replace(/""/g, '"')
+          .replace(/\r\n/g, '\n')
+          .replace(/\r/g, '\n')
+          .replace(/\n\s*/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+
+      function createEmptyStep(idx) {
+        return {
+          index: idx,
+          name: `Step ${idx}`,
+          openUrl: null,
+          actions: [],
+        };
+      }
+
+      function parseCatchpointScript(scriptText) {
+        function parseInternal(restrictToMainScript) {
+          const rawLines = scriptText.split(/\r?\n/);
+          const lines = [];
+
+          for (let i = 0; i < rawLines.length; i += 1) {
+            let merged = rawLines[i];
+
+            if (merged.includes('Catchpoint$.clickAndWait(') && merged.includes('`')) {
+              const start = merged.indexOf('Catchpoint$.clickAndWait(');
+              let after = merged.slice(start);
+              let backtickCount = (after.match(/`/g) || []).length;
+
+              while (backtickCount % 2 === 1 && i + 1 < rawLines.length) {
+                i += 1;
+                merged += '\n' + rawLines[i];
+                const extraTicks = (rawLines[i].match(/`/g) || []).length;
+                backtickCount += extraTicks;
+              }
+            }
+
+            lines.push(merged);
+          }
+          const steps = [];
+
+          const mainScriptDetected = restrictToMainScript && scriptText.includes('__translatedScript');
+          let inMainScript = !mainScriptDetected;
+
+          let currentStep = createEmptyStep(1);
+          steps.push(currentStep);
+
+          for (const rawLine of lines) {
+            if (mainScriptDetected) {
+              if (rawLine.includes('__translatedScript') && rawLine.includes('async')) {
+                inMainScript = true;
+                continue;
+              }
+              if (rawLine.includes('// end of __translatedScript')) {
+                inMainScript = false;
+                continue;
+              }
+              if (!inMainScript) continue;
+            }
+
+            const line = normalizeLine(rawLine);
+            if (!line || isComment(line)) continue;
+
+            const startStep = parseStartStep(line);
+            if (startStep) {
+              if (currentStep.openUrl || (currentStep.actions && currentStep.actions.length)) {
+                currentStep = createEmptyStep(steps.length + 1);
+                steps.push(currentStep);
+              }
+              currentStep.name = startStep.name;
+              continue;
+            }
+
+            const open = parseOpen(line);
+            if (open) {
+              const sameUrl = currentStep.openUrl && currentStep.openUrl === open.url;
+              if ((currentStep.openUrl && !sameUrl) || currentStep.actions.length) {
+                currentStep = createEmptyStep(steps.length + 1);
+                steps.push(currentStep);
+              }
+              if (!currentStep.openUrl) currentStep.openUrl = open.url;
+              currentStep.name = currentStep.name || `Step ${currentStep.index}`;
+              continue;
+            }
+
+            const urlAssign = parseUrlAssignment(line);
+            if (urlAssign) {
+              if (currentStep.openUrl || currentStep.actions.length) {
+                currentStep = createEmptyStep(steps.length + 1);
+                steps.push(currentStep);
+              }
+              currentStep.openUrl = urlAssign.url;
+              currentStep.name = currentStep.name || `Step ${currentStep.index}`;
+              continue;
+            }
+
+            const stepName = parseSetStepName(line);
+            if (stepName) {
+              currentStep.name = stepName.name;
+              continue;
+            }
+
+            const waitNoReq = parseWaitForNoRequest(line);
+            if (waitNoReq) {
+              currentStep.actions.push({
+                type: 'waitForNoRequest',
+                timeoutMs: waitNoReq.timeoutMs,
+                raw: line,
+              });
+              continue;
+            }
+
+            const waitEl = parseWaitForElementPresent(line);
+            if (waitEl) {
+              currentStep.actions.push({
+                type: 'waitForElementPresent',
+                locator: waitEl.locator,
+                timeoutMs: waitEl.timeoutMs,
+                raw: line,
+              });
+              continue;
+            }
+
+            const pause = parsePause(line);
+            if (pause) {
+              currentStep.actions.push({
+                type: 'pause',
+                timeoutMs: pause.timeoutMs,
+                raw: line,
+              });
+              continue;
+            }
+
+            const clickAndWait = parseClickAndWait(line);
+            if (clickAndWait) {
+              currentStep.actions.push({
+                type: 'clickAndWait',
+                locator: clickAndWait.locator,
+                raw: line,
+              });
+              continue;
+            }
+
+            const click = parseClick(line);
+            if (click) {
+              currentStep.actions.push({
+                type: 'click',
+                locator: click.locator,
+                raw: line,
+              });
+              continue;
+            }
+
+            const type = parseTypeKeys(line);
+            if (type) {
+              currentStep.actions.push({
+                type: 'typeKeys',
+                locator: type.locator,
+                value: type.value,
+                raw: line,
+              });
+              continue;
+            }
+
+            const select = parseSelect(line);
+            if (select) {
+              currentStep.actions.push({
+                type: 'select',
+                locator: select.locator,
+                option: select.option,
+                raw: line,
+              });
+              continue;
+            }
+
+            const searchPriceEval = parseSearchPriceEvaluate(line);
+            if (searchPriceEval) {
+              currentStep.actions.push({
+                type: 'searchPriceEval',
+                expression: searchPriceEval.expression,
+                raw: line,
+              });
+              continue;
+            }
+
+            const runScript = parseRunScript(line);
+            if (runScript) {
+              currentStep.actions.push({
+                type: 'javascript',
+                script: runScript.script,
+                raw: line,
+              });
+              continue;
+            }
+
+            if (isWebDriverCookieLine(line)) continue;
+
+            currentStep.actions.push({
+              type: 'unknown',
+              raw: line,
+            });
+          }
+
+          return steps.filter((s) => s.openUrl || (s.actions && s.actions.length > 0));
+        }
+
+        let meaningfulSteps = parseInternal(true);
+
+        if (!meaningfulSteps.length) {
+          meaningfulSteps = parseInternal(false);
+        }
+
+        if (!meaningfulSteps.length) {
+          throw new Error('No recognizable Catchpoint commands were found in the script.');
+        }
+
+        return meaningfulSteps;
+      }
+
+      function stepsToDynatraceJson(steps) {
+        const events = [];
+
+        function locatorToTarget(locator) {
+          const trimmed = (locator || '').trim();
+          let type = 'css';
+          let value = trimmed;
+
+          const overrideMap = {
+            '//*[@id="refinement-dell-pro-premium-product-line"]': '#refinement-dell-pro-product-line',
+            '//*[@id="dell-pro-pa13250-laptop"]/section[3]/div[3]/a': '#dell-pro-pa13250-laptop',
+            '//*[@id="add-to-cart-stack"]/div[2]/button': 'button[data-test-id="add-to-cart"]',
+          };
+
+          const key = trimmed.replace(/""/g, '"').replace(/^\s*\(|\)\s*$/g, '').trim();
+          if (overrideMap[trimmed] || overrideMap[key]) {
+            value = overrideMap[trimmed] || overrideMap[key];
+          } else {
+            let m = trimmed.match(/^\(\/\/\*\[contains\(text\(\),\s*(['"])(.+?)\1\)\]\)\[\d+\]$/);
+            if (m) {
+              const text = m[2];
+              const cssText = text.replace(/"/g, '\\"');
+              value = `a:contains("${cssText}")`;
+            } else {
+              m = trimmed.match(/^\/\/([a-zA-Z0-9_*]+)\[contains\(text\(\),\s*(['"])(.+?)\2\)\]$/);
+              if (m) {
+                const tag = m[1] === '*' ? '*' : m[1];
+                const text = m[3];
+                const cssText = text.replace(/"/g, '\\"');
+                value = `${tag}:contains("${cssText}")`;
+              } else {
+                m = trimmed.match(/^\/\/\*\[@id=['"]([^'"]+)['"]\]$/);
+                if (m) {
+                  value = `#${m[1]}`;
+                } else {
+                  m = trimmed.match(/^\/\/[a-zA-Z0-9_-]+\[@id=['"]([^'"]+)['"]\]$/);
+                  if (m) {
+                    value = `#${m[1]}`;
+                  } else {
+                    m = trimmed.match(/^\/\/([a-zA-Z0-9_-]+)\[@name=['"]([^'"]+)['"]\]$/);
+                    if (m) {
+                      value = `${m[1]}[name="${m[2].replace(/"/g, '\\"')}"]`;
+                    } else {
+                      m = trimmed.match(/^\/\/\*\[@name=['"]([^'"]+)['"]\]$/);
+                      if (m) {
+                        value = `[name="${m[1].replace(/"/g, '\\"')}"]`;
+                      } else {
+                        if (trimmed.startsWith('/')) {
+                          type = 'dom';
+                          const normalized = trimmed.replace(/""/g, '"');
+                          const xpathLiteral = normalized.replace(/'/g, "\\'");
+                          value = `document.evaluate('${xpathLiteral}', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue`;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          return {
+            target: {
+              locators: [
+                {
+                  type,
+                  value,
+                },
+              ],
+            },
+          };
+        }
+
+        function pushStubJavascript(description, original) {
+          const safeOriginal = normalizeEmbeddedScript(original);
+          events.push({
+            type: 'javascript',
+            description,
+            javaScript: `// TODO: Translate this Catchpoint command to a Dynatrace action\n// Original: ${safeOriginal}`,
+          });
+        }
+
+        const totalPriceEvals = steps.reduce((count, step) => {
+          return count + (step.actions || []).filter((a) => a.type === 'searchPriceEval').length;
+        }, 0);
+
+        let priceEvalIndex = 0;
+
+        steps.forEach((step, idx) => {
+          if (step.openUrl) {
+            events.push({
+              type: 'navigate',
+              description: step.name || `Step ${idx + 1}`,
+              url: step.openUrl,
+              wait: {
+                waitFor: 'page_complete',
+              },
+            });
+          }
+
+          step.actions.forEach((action) => {
+            switch (action.type) {
+              case 'waitForNoRequest':
+                break;
+              case 'waitForElementPresent':
+                break;
+              case 'pause':
+                break;
+              case 'click': {
+                const locator = action.locator || '';
+                const textMatch =
+                  typeof locator === 'string'
+                    ? locator.match(
+                        /(?:contains\(text\(\),\s*(['"])(.+?)\1\)|text\(\)\s*=\s*(['"])(.+?)\3)/,
+                      )
+                    : null;
+
+                if (textMatch) {
+                  const text = textMatch[2] || textMatch[4];
+                  const jsText = text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                  events.push({
+                    type: 'javascript',
+                    description: step.name || `Click element containing "${text}"`,
+                    wait: {
+                      waitFor: 'page_complete',
+                    },
+                    javaScript:
+                      'if (document.all !== undefined) {\n' +
+                      '    var items = document.all;\n' +
+                      '} else {\n' +
+                      '    var items = document.getElementsByTagName("*");\n' +
+                      '}\n' +
+                      'for (var i = 0; i < items.length; ++i) {\n' +
+                      `    if (items[i].textContent.includes("${jsText}")) {\n` +
+                      '        console.log("success");\n' +
+                      '        items[i].click();\n' +
+                      '    }\n' +
+                      '}\n',
+                  });
+                } else {
+                  events.push({
+                    type: 'click',
+                    description: step.name || 'Click element',
+                    wait: {
+                      waitFor: 'page_complete',
+                    },
+                    button: 0,
+                    ...locatorToTarget(action.locator),
+                  });
+                }
+                break;
+              }
+              case 'clickAndWait': {
+                const locator = action.locator || '';
+                const textMatch =
+                  typeof locator === 'string'
+                    ? locator.match(
+                        /(?:contains\(text\(\),\s*(['"])(.+?)\1\)|text\(\)\s*=\s*(['"])(.+?)\3)/,
+                      )
+                    : null;
+
+                if (textMatch) {
+                  const text = textMatch[2] || textMatch[4];
+                  const jsText = text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                  events.push({
+                    type: 'javascript',
+                    description: step.name || `Click element containing "${text}"`,
+                    wait: {
+                      waitFor: 'page_complete',
+                    },
+                    javaScript:
+                      'if (document.all !== undefined) {\n' +
+                      '    var items = document.all;\n' +
+                      '} else {\n' +
+                      '    var items = document.getElementsByTagName("*");\n' +
+                      '}\n' +
+                      'for (var i = 0; i < items.length; ++i) {\n' +
+                      `    if (items[i].textContent.includes("${jsText}")) {\n` +
+                      '        console.log("success");\n' +
+                      '        items[i].click();\n' +
+                      '    }\n' +
+                      '}\n',
+                  });
+                } else {
+                  events.push({
+                    type: 'click',
+                    description: step.name || 'Click element and wait',
+                    button: 0,
+                    ...locatorToTarget(action.locator),
+                    wait: {
+                      waitFor: 'page_complete',
+                    },
+                  });
+                }
+                break;
+              }
+              case 'typeKeys': {
+                const target = locatorToTarget(action.locator);
+                const rawText = action.value ?? '';
+                const trimmedText =
+                  typeof rawText === 'string'
+                    ? rawText.replace(/\s+/g, ' ').trim()
+                    : String(rawText);
+                const descriptionText = trimmedText || 'text';
+                events.push({
+                  type: 'keystrokes',
+                  description: `Type ${descriptionText}`,
+                  ...target,
+                  textValue: action.value,
+                  masked: false,
+                  simulateBlurEvent: true,
+                });
+                break;
+              }
+              case 'select':
+                break;
+              case 'searchPriceEval': {
+                let expr = (action.expression || '').trim();
+                if (expr) expr = normalizePriceExpression(expr);
+                let selector = "div[data-testid='sharedPSPDellPrice']";
+                if (expr) {
+                  const m =
+                    expr.match(/document\.querySelector\((["'`])([\s\S]*?)\1\)/) ||
+                    expr.match(/querySelector\((["'`])([\s\S]*?)\1\)/);
+                  if (m) {
+                    selector = m[2];
+                  }
+                }
+                selector = selector.trim().replace(/^["'`]+|["'`]+$/g, '');
+                const selLiteral = selector.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+                let body;
+                const pspComment =
+                  '// PSP: price of the same item you will click to open details - selector must target that product.\n';
+                const pdpComment =
+                  '// PDP: details page price for that same product (must match searchPrice).\n';
+
+                if (totalPriceEvals <= 1) {
+                  const rhs =
+                    expr ||
+                    `document.querySelector("${selLiteral}").innerText.replace(/[^\\d,]/g, '').replace(',', '.')`;
+                  body =
+                    pspComment +
+                    `price = ${rhs};\n` +
+                    'api.info("PSP: " + price);\n' +
+                    'api.setValue("searchPrice", price);\n';
+                } else if (priceEvalIndex === 0) {
+                  const rhs =
+                    expr ||
+                    `document.querySelector("${selLiteral}").innerText.replace(/[^\\d,]/g, '').replace(',', '.')`;
+                  body =
+                    pspComment +
+                    `price = ${rhs};\n` +
+                    'api.info("PSP: " + price);\n' +
+                    'api.setValue("searchPrice", price);\n';
+                } else if (priceEvalIndex === totalPriceEvals - 1) {
+                  const prevKey =
+                    totalPriceEvals === 2
+                      ? 'searchPrice'
+                      : totalPriceEvals === 3
+                        ? 'detailsPrice'
+                        : totalPriceEvals === 4
+                          ? 'detailsPrice1'
+                          : 'price' + (totalPriceEvals - 2);
+                  const rhs =
+                    expr ||
+                    `document.querySelector("${selLiteral}").innerText.replace(/[^\\d,]/g, '').replace(',', '.')`;
+                  body =
+                    `price = ${rhs};\n` +
+                    'api.info("cart price: " + price);\n' +
+                    `price0 = api.getValue("${prevKey}");\n` +
+                    `api.info("${prevKey}: " + price0 + '\\tcart price: ' + price);\n` +
+                    'if (price != price0) api.fail("previous price[" + price0 + "] != cart price[" + price + "]");\n';
+                } else if (priceEvalIndex === 1) {
+                  const rhs =
+                    expr ||
+                    `document.querySelector("${selLiteral}").innerText.replace(/[^\\d,]/g, '').replace(',', '.')`;
+                  body =
+                    pdpComment +
+                    `price = ${rhs};\n` +
+                    'api.setValue("detailsPrice", price);\n' +
+                    'api.info("PDP: " + price);\n' +
+                    'searchPrice = api.getValue("searchPrice");\n' +
+                    'api.info("PSP: " + searchPrice + \'\\tPDP: \' + price);\n' +
+                    'if (price != searchPrice) api.fail("search page price[" + searchPrice + "] != details page price[" + price + "]");\n';
+                } else if (priceEvalIndex === 2) {
+                  const rhs =
+                    expr ||
+                    `document.querySelector("${selLiteral}").innerText.replace(/[^\\d,]/g, '').replace(',', '.')`;
+                  body =
+                    `price = ${rhs};\n` +
+                    'api.info("PCP: " + price);\n' +
+                    'price0 = api.getValue("detailsPrice");\n' +
+                    'api.setValue("detailsPrice1", price);\n' +
+                    'api.info("PDP: " + price0 + \'\\tPCP: \' + price);\n' +
+                    'if (price != price0) api.fail("detail page price[" + price0 + "] != customize page price[" + price + "]");\n';
+                } else {
+                  const prevKey = `price${priceEvalIndex - 1}`;
+                  const currKey = `price${priceEvalIndex}`;
+                  const rhs =
+                    expr ||
+                    `document.querySelector("${selLiteral}").innerText.replace(/[^\\d,]/g, '').replace(',', '.')`;
+                  body =
+                    `price = ${rhs};\n` +
+                    `prev = api.getValue("${prevKey}");\n` +
+                    `api.setValue("${currKey}", price);\n` +
+                    `api.info("${prevKey}: " + prev + '\\t${currKey}: ' + price);\n` +
+                    'if (price != prev) api.fail("price mismatch: expected [" + prev + "] got [" + price + "]");\n';
+                }
+
+                events.push({
+                  type: 'javascript',
+                  description: step.name || 'Price check',
+                  javaScript: body,
+                });
+                priceEvalIndex += 1;
+                break;
+              }
+              case 'javascript': {
+                const rawScript = action.script || '';
+                const script = normalizeEmbeddedScript(rawScript);
+                if (isWebDriverCookieLine(script)) break;
+                if (
+                  script.includes('email-capture-container') &&
+                  (script.includes('click') || script.includes('querySelector'))
+                )
+                  break;
+                if (script.includes('email-close-btn')) {
+                  events.push({
+                    type: 'javascript',
+                    description: step.name || 'Close email popup',
+                    javaScript:
+                      "let popup = document.querySelector('.email-close-btn');\n" +
+                      'if (popup) {\n' +
+                      '    popup.click();\n' +
+                      '}\n',
+                  });
+                } else {
+                  events.push({
+                    type: 'javascript',
+                    description: step.name || 'Script from Catchpoint',
+                    javaScript: script,
+                  });
+                }
+                break;
+              }
+              case 'unknown':
+              default:
+                break;
+            }
+          });
+        });
+
+        if (events.length > 0) {
+          const last = events[events.length - 1];
+          if (last.wait && last.wait.waitFor === 'next_event') {
+            delete last.wait;
+          }
+        }
+
+        return {
+          configuration: {
+            chromiumStartupFlags: {
+              'disable-web-security': false,
+            },
+            device: {
+              mobile: false,
+              touchEnabled: false,
+              height: 1080,
+              width: 1920,
+            },
+          },
+          type: 'clickpath',
+          version: '1.0',
+          events,
+        };
+      }
+
+      function formatJson(value) {
+        try {
+          return JSON.stringify(JSON.parse(value), null, 2);
+        } catch {
+          return JSON.stringify(JSON.parse(JSON.stringify(value)), null, 2);
+        }
+      }
+
+      function setStatus(message, type) {
+        const el = document.getElementById('statusMessage');
+        if (!el) return;
+        el.textContent = message;
+        el.classList.remove('error', 'success');
+        if (type) {
+          el.classList.add(type);
+        }
+      }
+
+      function updateParseSummary(steps) {
+        const el = document.getElementById('parseSummary');
+        if (!el) return;
+        if (!steps || !steps.length) {
+          el.textContent = '';
+          return;
+        }
+        const totalActions = steps.reduce((sum, s) => sum + (s.actions?.length || 0), 0);
+        el.innerHTML = `<strong>${steps.length}</strong> steps · <strong>${totalActions}</strong> actions parsed`;
+      }
+
+      function loadExampleScript() {
+        const example = `const __translatedScript = async () => {
+  await Catchpoint.startStep("1. Homepage");
+  var __response = await Catchpoint$.open("https://www.example.com");
+  await Catchpoint$.pause(Number(5000));
+
+  await Catchpoint.startStep("2. Login");
+  await Catchpoint$.clickAndWait("//a[@id='login']");
+  await Catchpoint$.waitForElementPresent("//input[@id='username']", Number("15000"));
+  await Catchpoint$.typeKeys("//input[@id='username']", "demo");
+  await Catchpoint$.typeKeys("//input[@id='password']", "secret");
+  await Catchpoint$.clickAndWait("//button[@id='submit']");
+};`;
+
+        const input = document.getElementById('catchpointInput');
+        if (input) {
+          input.value = example;
+        }
+      }
+
+      function copyDynatraceJson() {
+        const output = document.getElementById('dynatraceOutput');
+        if (!output || !navigator.clipboard) return;
+        navigator.clipboard
+          .writeText(output.value || '')
+          .then(() => {
+            setStatus('Copied JSON to clipboard.', 'success');
+            setTimeout(() => setStatus('', ''), 1500);
+          })
+          .catch(() => {
+            setStatus('Copy failed. You can select and copy manually.', 'error');
+          });
+      }
+
+      function runConversion() {
+        const input = document.getElementById('catchpointInput');
+        const output = document.getElementById('dynatraceOutput');
+        if (!input || !output) return;
+
+        const scriptText = input.value || '';
+        if (!scriptText.trim()) {
+          setStatus('Please paste a Catchpoint script first.', 'error');
+          return;
+        }
+
+        try {
+          const steps = parseCatchpointScript(scriptText);
+          updateParseSummary(steps);
+          const dyn = stepsToDynatraceJson(steps);
+          output.value = formatJson(dyn);
+          setStatus('Converted successfully. Review JSON before use.', 'success');
+        } catch (err) {
+          console.error(err);
+          setStatus(err.message || 'Failed to parse Catchpoint script.', 'error');
+          updateParseSummary([]);
+        }
+      }
+
+      function beautifyOutput() {
+        const output = document.getElementById('dynatraceOutput');
+        if (!output) return;
+        if (!output.value.trim()) return;
+        try {
+          output.value = JSON.stringify(JSON.parse(output.value), null, 2);
+          setStatus('Beautified JSON.', 'success');
+          setTimeout(() => setStatus('', ''), 1200);
+        } catch {
+          setStatus('Output is not valid JSON to beautify.', 'error');
+        }
+      }
+
+      function init() {
+        const convertBtn = document.getElementById('convertBtn');
+        const beautifyBtn = document.getElementById('beautifyBtn');
+        const exampleBtn = document.getElementById('exampleBtn');
+        const copyJsonBtn = document.getElementById('copyJsonBtn');
+
+        if (convertBtn) convertBtn.addEventListener('click', runConversion);
+        if (beautifyBtn) beautifyBtn.addEventListener('click', beautifyOutput);
+        if (exampleBtn)
+          exampleBtn.addEventListener('click', () => {
+            loadExampleScript();
+            setStatus('Loaded example Catchpoint script.', 'success');
+            updateParseSummary([]);
+          });
+        if (copyJsonBtn) copyJsonBtn.addEventListener('click', copyDynatraceJson);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    </script>
+  </body>
+</html>
+
