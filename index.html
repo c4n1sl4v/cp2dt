@@ -337,7 +337,6 @@ clickAndWait("//button[@id=\'submit\']")
 
         <section class="panel panel-center">
           <button id="convertBtn" class="primary-button">Convert →</button>
-          <button id="beautifyBtn" class="secondary-button">Beautify JSON</button>
           <div id="statusMessage" class="status-message" aria-live="polite"></div>
         </section>
 
@@ -1292,27 +1291,12 @@ clickAndWait("//button[@id=\'submit\']")
         }
       }
 
-      function beautifyOutput() {
-        const output = document.getElementById('dynatraceOutput');
-        if (!output) return;
-        if (!output.value.trim()) return;
-        try {
-          output.value = JSON.stringify(JSON.parse(output.value), null, 2);
-          setStatus('Beautified JSON.', 'success');
-          setTimeout(() => setStatus('', ''), 1200);
-        } catch {
-          setStatus('Output is not valid JSON to beautify.', 'error');
-        }
-      }
-
       function init() {
         const convertBtn = document.getElementById('convertBtn');
-        const beautifyBtn = document.getElementById('beautifyBtn');
         const exampleBtn = document.getElementById('exampleBtn');
         const copyJsonBtn = document.getElementById('copyJsonBtn');
 
         if (convertBtn) convertBtn.addEventListener('click', runConversion);
-        if (beautifyBtn) beautifyBtn.addEventListener('click', beautifyOutput);
         if (exampleBtn)
           exampleBtn.addEventListener('click', () => {
             loadExampleScript();
