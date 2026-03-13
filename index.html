@@ -911,12 +911,16 @@ clickAndWait("//button[@id=\'submit\']")
                       '} else {\n' +
                       '    var items = document.getElementsByTagName("*");\n' +
                       '}\n' +
+                      'var found = false;\n' +
                       'for (var i = 0; i < items.length; ++i) {\n' +
                       `    if (items[i].textContent.includes("${jsText}")) {\n` +
-                      '        console.log("success");\n' +
+                      '        api.log("success");\n' +
                       '        items[i].click();\n' +
+                      '        found = true;\n' +
+                      '        break;\n' +
                       '    }\n' +
-                      '}\n',
+                      '}\n' +
+                      `if (!found) { api.fail("Element with text \\"${jsText}\\" not found"); }\n`,
                   });
                 } else {
                   events.push({
@@ -955,12 +959,16 @@ clickAndWait("//button[@id=\'submit\']")
                       '} else {\n' +
                       '    var items = document.getElementsByTagName("*");\n' +
                       '}\n' +
+                      'var found = false;\n' +
                       'for (var i = 0; i < items.length; ++i) {\n' +
                       `    if (items[i].textContent.includes("${jsText}")) {\n` +
-                      '        console.log("success");\n' +
+                      '        api.log("success");\n' +
                       '        items[i].click();\n' +
+                      '        found = true;\n' +
+                      '        break;\n' +
                       '    }\n' +
-                      '}\n',
+                      '}\n' +
+                      `if (!found) { api.fail("Element with text \\"${jsText}\\" not found"); }\n`,
                   });
                 } else {
                   events.push({
