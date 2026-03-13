@@ -1109,6 +1109,22 @@ clickAndWait("//button[@id=\'submit\']")
                 const rawScript = action.script || '';
                 const script = normalizeEmbeddedScript(rawScript);
                 if (isWebDriverCookieLine(script)) break;
+                const normalizedClickScript = script.replace(/;+\s*$/, '');
+                if (
+                  normalizedClickScript ===
+                  'document.querySelector("button[id=\'ooc-destination-country\']").click()'
+                ) {
+                  events.push({
+                    type: 'click',
+                    description: step.name || 'Click destination country button',
+                    button: 0,
+                    ...locatorToTarget("button[id='ooc-destination-country']"),
+                    wait: {
+                      waitFor: 'page_complete',
+                    },
+                  });
+                  break;
+                }
                 if (
                   script.includes('email-capture-container') &&
                   (script.includes('click') || script.includes('querySelector'))
