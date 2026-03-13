@@ -914,7 +914,7 @@ clickAndWait("//button[@id=\'submit\']")
                       'var found = false;\n' +
                       'for (var i = 0; i < items.length; ++i) {\n' +
                       `    if (items[i].textContent.includes("${jsText}")) {\n` +
-                      '        api.log("success");\n' +
+                      '        api.info("success");\n' +
                       '        items[i].click();\n' +
                       '        found = true;\n' +
                       '        break;\n' +
@@ -962,7 +962,7 @@ clickAndWait("//button[@id=\'submit\']")
                       'var found = false;\n' +
                       'for (var i = 0; i < items.length; ++i) {\n' +
                       `    if (items[i].textContent.includes("${jsText}")) {\n` +
-                      '        api.log("success");\n' +
+                      '        api.info("success");\n' +
                       '        items[i].click();\n' +
                       '        found = true;\n' +
                       '        break;\n' +
@@ -1150,6 +1150,18 @@ clickAndWait("//button[@id=\'submit\']")
                 break;
               }
               case 'unknown':
+                if (typeof action.raw === 'string' && action.raw.includes('checkOutOfStock(')) {
+                  events.push({
+                    type: 'click',
+                    description: step.name || 'Click Explore Options',
+                    button: 0,
+                    ...locatorToTarget("(//*[contains(text(),'Explore Options')])[1]"),
+                    wait: {
+                      waitFor: 'page_complete',
+                    },
+                  });
+                }
+                break;
               default:
                 break;
             }
